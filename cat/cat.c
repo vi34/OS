@@ -5,13 +5,23 @@
 #include <errno.h>
 #include <string.h>
 
+const int BUF_SIZE = 512;
 
 int main() {
-    char buf[300];
-    int k;
-    memset(buf,0,300);
-    k = read_(STDIN_FILENO,buf,300);
-    //printf("\r\n%d",k);
-    write_(STDOUT_FILENO,buf,300);
+    char buf[BUF_SIZE];
+    int r,w;
+
+    while((r = read_(STDIN_FILENO,buf,BUF_SIZE)) > 0) {
+        w = write_(STDOUT_FILENO,buf,r);
+        if(w < 0) {
+            perror("write");
+            exit(1);
+        }
+        memset(buf,0,BUF_SIZE);
+    }
+    if(r < 0) {
+        perror("read");
+        exit(1);
+    }
     return 0;
 }
