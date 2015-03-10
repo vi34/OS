@@ -3,11 +3,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
 
 
 int main() {
-    char buf[10];
-    read_(0,buf,10);
-    write_(1,buf,10);
+    char buf[300];
+    int k;
+    memset(buf,0,300);
+    k = read_(STDIN_FILENO,buf,300);
+    //printf("\r\n%d",k);
+    write_(STDOUT_FILENO,buf,300);
     return 0;
 }
