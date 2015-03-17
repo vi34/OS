@@ -5,3 +5,5 @@ cat/cat
 *.so
 
 cat/cat.dSYM/Contents/Resources/DWARF/cat
+
+*.o
