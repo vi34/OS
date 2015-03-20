@@ -17,7 +17,7 @@ int main() {
             perror("write");
             exit(1);
         }
-        memset(buf,0,BUF_SIZE);
+        //memset(buf,0,BUF_SIZE);
     }
     if(r < 0) {
         perror("read");
