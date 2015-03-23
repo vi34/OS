@@ -52,7 +52,6 @@ int main() {
     if(index > 0)
     {
         reverse(word, index);
-        word[index++] = ' ';
         w = write_(STDOUT_FILENO,word, index);
         if(w < 0)
         {
