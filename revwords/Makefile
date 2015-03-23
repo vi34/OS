@@ -1,9 +1,10 @@
+NAME = revwords
+
 all: ../lib/libhelpers.so
-	gcc -g -Wall -L../lib/ -lhelpers  -Wl,-rpath,../lib/ revwords.c -o revwords
+	gcc -std=c99 -L../lib/ -lhelpers -Wl,-rpath,../lib/ $(NAME).c -o $(NAME)
 
 ../lib/libhelpers.so:
 	$(MAKE) -C $(dir $@) $(notdir $@) 
 
 clean:
-	rm -f revwords
-	rm -rf revwords.dSYM
+	rm -f $(NAME)
