@@ -1,6 +1,8 @@
 #include <sys/types.h>
 #include <sys/uio.h>
+#include <sys/wait.h>
 #include <unistd.h>
+#include <stdio.h>
 #include "helpers.h"
 
 ssize_t read_(int fd, void *buf, size_t nbyte) {
@@ -41,4 +43,30 @@ ssize_t read_until(int fd, void * buf, size_t nbyte, char delimiter) {
     if(n < 0)
         return n;
     return count;
+}
+
+int spawn(const char * file, char * const argv [])
+{
+    int pid = fork();
+    if (pid < 0)
+    {
+        perror("fork");
+        return -1;
+    } else if (pid == 0) { //child
+        int err = execvp(file,argv);
+        if(err < 0)
+        {
+            perror("exec");
+            return err;
+        }
+    } else {
+        int status;
+        if(wait(&status) < 0)
+        {
+            perror("wait");
+            return -1;
+        }
+        return status;
+    }
+    return 0;
 }
