@@ -47,18 +47,15 @@ ssize_t read_until(int fd, void * buf, size_t nbyte, char delimiter) {
 
 int spawn(const char * file, char * const argv [])
 {
-    int pid = fork();
+    pid_t pid = fork();
     if (pid < 0)
     {
         perror("fork");
         return -1;
     } else if (pid == 0) { //child
-        int err = execvp(file,argv);
-        if(err < 0)
-        {
-            perror("exec");
-            return err;
-        }
+        execvp(file,argv);
+        perror("exec");
+        return -1;
     } else {
         int status;
         if(wait(&status) < 0)

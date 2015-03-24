@@ -13,10 +13,11 @@ int main(int argc, char* argv[]) {
     int r, w;
     int index = 0;
 
-    for(int i = 0; i < argc; ++i)
+    for(int i = 0; i < argc - 1; ++i)
     {
         argv[i] = argv[i + 1];
     }
+    argv[argc - 1] = word;
 
     while(1)
     {
@@ -32,7 +33,6 @@ int main(int argc, char* argv[]) {
             if(((char*)buf)[i] == '\n')
             {
                 word[index] = 0;
-                argv[argc - 1] = word;
                 int sp_res = spawn(argv[0], argv);
                 if(sp_res == 0)
                 {
