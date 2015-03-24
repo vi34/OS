@@ -7,3 +7,5 @@ cat/cat
 cat/cat.dSYM/Contents/Resources/DWARF/cat
 
 *.o
+
+revwords/revwords
