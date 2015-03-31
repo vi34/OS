@@ -43,10 +43,9 @@ size_t buf_size(struct buf_t *buf) {
 ssize_t buf_fill(int fd,struct buf_t *buf, size_t required) {
     assertm(buf != NULL);
     assertm(buf->capacity < required);
-
     ssize_t r;
     while(buf->size < required) {
-        r = read(fd, buf + buf->size, buf->capacity - buf->size);
+        r = read(fd, buf->buffer + buf->size, buf->capacity - buf->size);
         if (r < 0) {
             return -1;
         }
@@ -55,7 +54,6 @@ ssize_t buf_fill(int fd,struct buf_t *buf, size_t required) {
         }
         buf->size += r;
     }
-
     return buf->size;
 }
 
@@ -70,6 +68,7 @@ ssize_t buf_flush(int fd,struct buf_t *buf, size_t required) {
     while (count < required) {
         w = write(fd, buf->buffer + count, required - count);
         if(w < 0) {
+            perror("write");
             memmove(buf->buffer, buf->buffer + count, buf->size - count);
             return -1;
         }
