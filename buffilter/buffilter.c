@@ -11,6 +11,8 @@ const size_t SIZE = 4096;
 int main(int argc, char* argv[]) {
     struct buf_t *buf = buf_new(SIZE);
     struct buf_t *buf2 = buf_new(SIZE);
+    if(buf == NULL || buf2 == NULL)
+        return -1;
     char word[SIZE + 1];
     int r, w;
     int index = 0;
@@ -29,6 +31,7 @@ int main(int argc, char* argv[]) {
         //r = -1;
         if (r < 0) {
             buf_free(buf);
+            buf_free(buf2);
             exit(1);
         }
 
@@ -44,11 +47,13 @@ int main(int argc, char* argv[]) {
             if(w < 0)
             {
                 buf_free(buf);
+                buf_free(buf2);
                 exit(1);
             }
 
         }
     }
+    buf_free(buf2);
     buf_free(buf);
     return 0;
 }

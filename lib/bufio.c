@@ -81,27 +81,33 @@ ssize_t buf_flush(int fd, struct buf_t *buf, size_t required) {
 
 ssize_t buf_getline(int fd, struct buf_t* buf, char* dest) {
     assertm(buf != NULL);
-    int i = 0;
     ssize_t answ = 0;
-    for(; i < buf->size; ++i) {
-        if(buf->buffer[i] == '\n')
-            break;
-    }
-    if (i == buf->size)
-    {
-        memmove(dest, buf->buffer, buf->size);
-        answ = buf->size;
-        buf->size = 0;
-        int f = buf_fill(fd, buf, 1);
-        if (f > 0)
-            answ += buf_getline(fd, buf, dest + answ);
-        return answ;
-
-    } else {
-        memmove(dest, buf->buffer, i + 1);
-        memmove(buf->buffer, buf->buffer + i + 1, buf->size - i - 1);
-        buf->size -= (i + 1);
-        return i + 1;
+    while(1) {
+        int i = 0;
+        for(; i < buf->size; ++i) {
+            if(buf->buffer[i] == '\n')
+                break;
+        }
+        if (i == buf->size)
+        {
+            memmove(dest, buf->buffer, buf->size);
+            answ += buf->size;
+            buf->size = 0;
+            int f = buf_fill(fd, buf, 1);
+            if (f < 0)
+                return f;
+            if (f == 0)
+                return answ;
+            if (f > 0)
+            {
+                dest += answ;
+            }
+        } else {
+            memmove(dest, buf->buffer, i + 1);
+            memmove(buf->buffer, buf->buffer + i + 1, buf->size - i - 1);
+            buf->size -= (i + 1);
+            return i + 1;
+        }
     }
 
 }
@@ -120,3 +126,8 @@ ssize_t buf_write(int fd, struct buf_t* buf, char* src, size_t len) {
     return 0;
 
 }
+
+
+
+
+
