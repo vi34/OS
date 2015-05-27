@@ -3,6 +3,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "helpers.h"
 
 ssize_t read_(int fd, void *buf, size_t nbyte) {
@@ -64,6 +65,24 @@ int spawn(const char * file, char * const argv [])
             return -1;
         }
         return status;
+    }
+    return 0;
+}
+
+struct execargs_t* execargs_new() {
+    struct execargs_t* p;
+    p = (struct execargs_t*) malloc(sizeof(struct execargs_t));
+    return p;
+}
+
+int exec(struct execargs_t* args) {
+    return 0;
+}
+
+int runpiped(struct execargs_t** programs, size_t n) {
+    for(int i = 0; i < n; ++i)
+    {
+        printf("run %s\n",programs[i]->file);
     }
     return 0;
 }
