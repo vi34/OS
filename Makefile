@@ -5,4 +5,5 @@ all:
 	$(MAKE) -C filter
 	$(MAKE) -C bufcat
 	$(MAKE) -C buffilter
+	$(MAKE) -C simplesh
 
