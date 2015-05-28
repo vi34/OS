@@ -4,7 +4,10 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <signal.h>
 #include "helpers.h"
+
 
 ssize_t read_(int fd, void *buf, size_t nbyte) {
     int n;
@@ -76,13 +79,91 @@ struct execargs_t* execargs_new() {
 }
 
 int exec(struct execargs_t* args) {
-    return 0;
+    write(STDERR_FILENO,"|",1);
+    write(STDERR_FILENO,args->file,strlen(args->file));
+    write(STDERR_FILENO,"|\n",2);
+    args->args[args->argc] = 0;
+    execvp(args->file, args->args);
+    perror("exec");
+    return -1;
+}
+
+
+static void sig_handler(int signo) {
+    if(signo == SIGINT) {
+
+    } else if (signo == SIGQUIT) {
+        exit(0);
+    }
+}
+
+static void sig_handler2(int signo) {
+    if (signo == SIGPIPE) {
+        printf("SIGPIPE");
+        exit(0);
+    } else if(signo == SIGINT) {
+        write(STDERR_FILENO, "3\n", 2);
+        //exit(0);
+    } else if (signo == SIGQUIT) {
+        exit(0);
+    }
 }
 
 int runpiped(struct execargs_t** programs, size_t n) {
-    for(int i = 0; i < n; ++i)
-    {
-        printf("run %s\n",programs[i]->file);
+    int pipes[n - 1][2];
+    pid_t pids[n];
+
+    if (signal(SIGINT, sig_handler) == SIG_ERR || signal(SIGQUIT, sig_handler) == SIG_ERR)
+        return -1;
+
+    int r;
+    r = pipe(pipes[0]);
+    if (r < 0)
+        return -1;
+    pids[0] = fork();
+    if (pids[0] < 0)
+        return -1;
+    if (pids[0] == 0) { // child
+        if (signal(SIGPIPE, sig_handler2) == SIG_ERR || signal(SIGINT, sig_handler2) == SIG_ERR)
+            return -1;
+        if(n > 1 && dup2(pipes[0][1], STDOUT_FILENO) < 0)
+            return -1;
+        exec(programs[0]);
+    } else {
+        for(int i = 1; i < n - 1; ++i)
+        {
+            r = pipe(pipes[i]);
+            pids[i] = fork();
+            if(pids[i] == 0) { //child
+                if (signal(SIGPIPE, sig_handler2) == SIG_ERR || signal(SIGINT, sig_handler2) == SIG_ERR)
+                    return -1;
+                if(dup2(pipes[i - 1][0], STDIN_FILENO < 0))
+                    return -1;
+                if(dup2(pipes[i][1], STDOUT_FILENO) < 0)
+                    return -1;
+
+                exec(programs[i]);
+            }
+        }
+
+        if (n > 1) {
+            pids[n - 1] = fork();
+            if (pids[n - 1] == 0) {
+                if (signal(SIGPIPE, sig_handler2) == SIG_ERR || signal(SIGINT, sig_handler2) == SIG_ERR)
+                    return -1;
+                if(dup2(pipes[n - 2][0], STDIN_FILENO < 0))
+                    return -1;
+                exec(programs[n - 1]);
+            }
+        }
+
+        for(int i = 0; i < n; ++i) {
+            int k;
+            //printf("%d",k);
+            wait(&k);
+        }
+
     }
+
     return 0;
 }
