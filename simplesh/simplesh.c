@@ -31,18 +31,18 @@ void parse_line(char* line, int length) {
                 memmove(programs[programs_cnt]->file, line + word_start, i - word_start);
                 programs[programs_cnt]->file[i - word_start] = 0;
                 programs[programs_cnt]->args[0][i - word_start] = 0;
-                //printf("pr: (%s)\n", programs[programs_cnt]->file);
+                programs[programs_cnt]->argc = 1;
                 programs_cnt++;
                 while(i < length - 1 &&  (line[i + 1] == ' ' || line[i + 1] == 0))
                     i++;
                 word_start = i + 1;
+
                 argc = 1;
 
             } else {
                 programs[programs_cnt - 1]->args[argc] = malloc(i - word_start + 1);
                 memmove(programs[programs_cnt - 1]->args[argc], line + word_start, i - word_start);
                 programs[programs_cnt - 1]->args[argc][i - word_start] = 0;
-                //printf("arg: %s\n", programs[programs_cnt - 1]->args[argc]);
                 while(i < length &&  (line[i + 1] == ' ' || line[i + 1] == 0))
                     i++;
                 word_start = i + 1;
@@ -59,24 +59,11 @@ void parse_line(char* line, int length) {
     }
 }
 
-static void sig_handler(int signo) {
-    if (signo == SIGINT) {
-        printf("1\n");
-        kill(0,SIGINT);
-    } else if (signo == SIGQUIT) {
-        exit(0);
-    }
-}
-
 int main() {
     struct buf_t *buf = buf_new(BUF_SIZE);
     if(buf == NULL)
         return -1;
     char line[BUF_SIZE + 1];
-
-
-
-
     int r = 1,w;
     while(r > 0) {
         w = write(STDOUT_FILENO, "$", 1);
@@ -87,17 +74,10 @@ int main() {
         line[r - 1] = 0;
         parse_line(line, r);
         if(programs_cnt > 0) {
-            /*for(int i = 0; i < programs_cnt; ++i) {
-                printf("pr: (%s)",programs[i]->file);
-                for(int j = 0; j < programs[i]->argc; ++j)
-                    printf(" (%s)", programs[i]->args[j]);
-                printf("\n");
-            }*/
             runpiped(programs, programs_cnt);
             for (int i = 0; i < programs_cnt; ++i) {
                 free(programs[i]);
             }
-            printf("\nreturned from pipe");
         }
     }
     buf_free(buf);

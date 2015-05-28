@@ -79,9 +79,6 @@ struct execargs_t* execargs_new() {
 }
 
 int exec(struct execargs_t* args) {
-    write(STDERR_FILENO,"|",1);
-    write(STDERR_FILENO,args->file,strlen(args->file));
-    write(STDERR_FILENO,"|\n",2);
     args->args[args->argc] = 0;
     execvp(args->file, args->args);
     perror("exec");
@@ -102,8 +99,8 @@ static void sig_handler2(int signo) {
         printf("SIGPIPE");
         exit(0);
     } else if(signo == SIGINT) {
-        write(STDERR_FILENO, "3\n", 2);
-        //exit(0);
+        //write(STDERR_FILENO, "3\n", 2);
+        exit(0);
     } else if (signo == SIGQUIT) {
         exit(0);
     }
@@ -157,10 +154,13 @@ int runpiped(struct execargs_t** programs, size_t n) {
             }
         }
 
+        int res;
+        wait(&res);
         for(int i = 0; i < n; ++i) {
-            int k;
-            //printf("%d",k);
-            wait(&k);
+            kill(pids[i],SIGINT);
+        }
+        for(int i = 0; i < n - 1; ++i) {
+            wait(&res);
         }
 
     }
