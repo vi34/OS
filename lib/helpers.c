@@ -85,20 +85,23 @@ int exec(struct execargs_t* args) {
     return -1;
 }
 
+pid_t* child_pids;
+int child_num;
 
 static void sig_handler(int signo) {
     if(signo == SIGINT) {
-
+        for(int i = 0; i < child_num; ++i) {
+            kill(child_pids[i], SIGKILL);
+        }
     } else if (signo == SIGQUIT) {
         exit(0);
     }
 }
 
+
+
 static void sig_handler2(int signo) {
-    if (signo == SIGPIPE) {
-        printf("SIGPIPE");
-        exit(0);
-    } else if(signo == SIGINT) {
+    if(signo == SIGINT) {
         //write(STDERR_FILENO, "3\n", 2);
         exit(0);
     } else if (signo == SIGQUIT) {
@@ -106,9 +109,13 @@ static void sig_handler2(int signo) {
     }
 }
 
+
 int runpiped(struct execargs_t** programs, size_t n) {
     int pipes[n - 1][2];
     pid_t pids[n];
+
+    child_num = n;
+    child_pids = pids;
 
     if (signal(SIGINT, sig_handler) == SIG_ERR || signal(SIGQUIT, sig_handler) == SIG_ERR)
         return -1;
@@ -121,10 +128,14 @@ int runpiped(struct execargs_t** programs, size_t n) {
     if (pids[0] < 0)
         return -1;
     if (pids[0] == 0) { // child
-        if (signal(SIGPIPE, sig_handler2) == SIG_ERR || signal(SIGINT, sig_handler2) == SIG_ERR)
+        if (signal(SIGINT, sig_handler2) == SIG_ERR)
             return -1;
         if(n > 1 && dup2(pipes[0][1], STDOUT_FILENO) < 0)
             return -1;
+
+        close(pipes[0][1]);
+        close(pipes[0][0]);
+
         exec(programs[0]);
     } else {
         for(int i = 1; i < n - 1; ++i)
@@ -132,13 +143,17 @@ int runpiped(struct execargs_t** programs, size_t n) {
             r = pipe(pipes[i]);
             pids[i] = fork();
             if(pids[i] == 0) { //child
-                if (signal(SIGPIPE, sig_handler2) == SIG_ERR || signal(SIGINT, sig_handler2) == SIG_ERR)
+                if (signal(SIGINT, sig_handler2) == SIG_ERR)
                     return -1;
                 if(dup2(pipes[i - 1][0], STDIN_FILENO < 0))
                     return -1;
                 if(dup2(pipes[i][1], STDOUT_FILENO) < 0)
                     return -1;
 
+                for(int j = 0; j < n - 1; ++j) {
+                    close(pipes[j][0]);
+                    close(pipes[j][1]);
+                }
                 exec(programs[i]);
             }
         }
@@ -146,19 +161,29 @@ int runpiped(struct execargs_t** programs, size_t n) {
         if (n > 1) {
             pids[n - 1] = fork();
             if (pids[n - 1] == 0) {
-                if (signal(SIGPIPE, sig_handler2) == SIG_ERR || signal(SIGINT, sig_handler2) == SIG_ERR)
+                if (signal(SIGINT, sig_handler2) == SIG_ERR)
                     return -1;
                 if(dup2(pipes[n - 2][0], STDIN_FILENO < 0))
                     return -1;
+
+                for(int i = 0; i < n - 1; ++i) {
+                    close(pipes[i][0]);
+                    close(pipes[i][1]);
+                }
                 exec(programs[n - 1]);
             }
         }
 
+        for(int i = 0; i < n - 1; ++i) {
+            close(pipes[i][0]);
+            close(pipes[i][1]);
+        }
+
         int res;
         wait(&res);
-        for(int i = 0; i < n; ++i) {
+        /*for(int i = 0; i < n; ++i) {
             kill(pids[i],SIGINT);
-        }
+        }*/
         for(int i = 0; i < n - 1; ++i) {
             wait(&res);
         }

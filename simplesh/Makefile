@@ -1,9 +1,11 @@
 NAME = simplesh
 
-all: ../lib/libbufio.so
-	gcc -std=c99 -Wall -L../lib/ -lbufio -lhelpers -Wl,-rpath,../lib/ $(NAME).c -o $(NAME)
+all: ../lib/libhelpers.so simplesh
+	
+simplesh: simplesh.c
+	gcc -std=c99 -L../lib/ -lbufio -lhelpers -Wl,-rpath,../lib/ $(NAME).c -o $(NAME)
 
-../lib/libbufio.so:
+../lib/libhelpers.so:
 	$(MAKE) -C $(dir $@) $(notdir $@) 
 
 clean:

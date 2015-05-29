@@ -12,6 +12,13 @@ const int MAX_PROGRAMS_CNT = 100;
 struct execargs_t* programs[MAX_PROGRAMS_CNT];
 int programs_cnt = 0;
 
+static void sig_handler(int signo) {
+    if(signo == SIGINT) {
+    } else if (signo == SIGQUIT) {
+        exit(0);
+    }
+}
+
 void parse_line(char* line, int length) {
     int argc = 0;
     int word_start = 0;
@@ -63,6 +70,9 @@ int main() {
     struct buf_t *buf = buf_new(BUF_SIZE);
     if(buf == NULL)
         return -1;
+    if (signal(SIGINT, sig_handler) == SIG_ERR || signal(SIGQUIT, sig_handler) == SIG_ERR)
+        return -1;
+
     char line[BUF_SIZE + 1];
     int r = 1,w;
     while(r > 0) {

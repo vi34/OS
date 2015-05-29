@@ -1,6 +1,8 @@
 NAME = cat
 
-all: ../lib/libhelpers.so
+all: ../lib/libhelpers.so $(NAME)
+	
+$(NAME): $(NAME).c
 	gcc -std=c99 -L../lib/ -lhelpers -Wl,-rpath,../lib/ $(NAME).c -o $(NAME)
 
 ../lib/libhelpers.so:
