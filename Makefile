@@ -6,4 +6,5 @@ all:
 	$(MAKE) -C bufcat
 	$(MAKE) -C buffilter
 	$(MAKE) -C simplesh
+	$(MAKE) -C filesender
 
