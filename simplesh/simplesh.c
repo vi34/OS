@@ -7,8 +7,9 @@
 #include <string.h>
 #include <signal.h>
 
-const int BUF_SIZE = 4096;
-const int MAX_PROGRAMS_CNT = 100;
+#define BUF_SIZE 4096
+#define MAX_PROGRAMS_CNT 100
+
 struct execargs_t* programs[MAX_PROGRAMS_CNT];
 int programs_cnt = 0;
 

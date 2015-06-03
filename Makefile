@@ -7,4 +7,14 @@ all:
 	$(MAKE) -C buffilter
 	$(MAKE) -C simplesh
 	$(MAKE) -C filesender
-
+	$(MAKE) -C bipiper
+clean:
+	$(MAKE) -C lib clean
+	$(MAKE) -C cat clean
+	$(MAKE) -C revwords clean
+	$(MAKE) -C filter clean
+	$(MAKE) -C bufcat clean
+	$(MAKE) -C buffilter clean
+	$(MAKE) -C simplesh clean
+	$(MAKE) -C filesender clean
+	$(MAKE) -C bipiper clean
