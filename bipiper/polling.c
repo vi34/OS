@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <errno.h>
+#include <signal.h>
 #include "../lib/bufio.h"
 
 #define MAX_CLIENTS_CNT 254
@@ -74,53 +75,10 @@ int accept_client(int sfd) {
 int sfd;
 int sfd2;
 
-pid_t make_child(int fd_from, int fd_to) {
-    pid_t pid = fork();
-    if(pid < 0)
-    {
-        perror("fork");
-        close(fd_from);
-        close(fd_to);
-        return -1;
-    }
-    if(pid == 0) {
-        struct buf_t* buf = buf_new(4096);
-        if(buf == NULL) {
-            close(fd_from);
-            close(fd_to);
-            close(sfd);
-            close(sfd2);
-            exit(1);
-        }
-
-        int r = 1, w = 1;
-        while (1) {
-            if (((r = buf_fill(fd_from, buf, 1)) < 0) || w < 0) {
-                buf_free(buf);
-                close(fd_from);
-                close(fd_to);
-                close(sfd);
-                close(sfd2);
-                exit(1);
-            }
-
-            if(r == 0) {
-                buf_free(buf);
-                close(fd_from);
-                close(fd_to);
-                close(sfd);
-                close(sfd2);
-                exit(0);
-            }
-            w = buf_flush(fd_to, buf, buf->size);
-        }
-    }
-    return pid;
-}
-
 struct mypipe {
     struct buf_t* buffer1;
     struct buf_t* buffer2;
+    int closing;
 };
 
 struct pollfd pollfds[2 + MAX_CLIENTS_CNT];
@@ -148,7 +106,13 @@ int pipe_receive(int pfd1, int pfd2, int buf_id) {
         buf = buffs[buf_id].buffer1;
     int prev_size = buf_size(buf);
     int r = buf_fill(pollfds[pfd1].fd, buf, prev_size + 1);
-    if(r < prev_size + 1) { // EOF or error
+    if (r == prev_size) { // EOF
+        pollfds[pfd1].events &= ~(POLLIN);
+        if (buffs[buf_id].closing != -1) {
+            close_pipe(pfd1, pfd2, buf_id);
+        }
+        buffs[buf_id].closing = !(pfd1 % 2);
+    } else if(r < prev_size) { // error
         close_pipe(pfd1, pfd2, buf_id);
         return r;
     } else {
@@ -171,8 +135,13 @@ int pipe_send(int pfd1, int pfd2, int buf_id) {
         close_pipe(pfd1, pfd2, buf_id);
         return -1;
     }
-    if (buf_size(buf) == 0)
+    if (buf_size(buf) == 0) {
         pollfds[pfd1].events &= ~(POLLOUT);
+        if(buffs[buf_id].closing == (pfd1 % 2)) {
+
+            shutdown(pollfds[pfd1].fd, SHUT_WR);
+        }
+    }
 
     if (buf_size(buf) < buf_capacity(buf))
         pollfds[pfd2].events |= POLLIN;
@@ -214,6 +183,7 @@ int main(int argc, char** argv)
                         if(state == 1) {
                             buffs[(nfds - 2) / 2].buffer1 = buf_new(BUF_SIZE);
                             buffs[(nfds - 2) / 2].buffer2 = buf_new(BUF_SIZE);
+                            buffs[(nfds - 2) / 2].closing = -1;
                             nfds += 2;
                         }
 
@@ -224,7 +194,6 @@ int main(int argc, char** argv)
                         if(pollfds[i].revents & POLLIN) {
                             if (pipe_receive(i, pair, buf_id) < 0 ) {
                                 fprintf(stderr, "error while receiving, some clients had closed");
-                                //???
                             }
                         } else if (pollfds[i].revents & POLLOUT) {
                             if (pipe_send(i, pair, buf_id) < 0) {

@@ -80,6 +80,7 @@ pid_t make_child(int fd_from, int fd_to) {
     if(pid == 0) {
         struct buf_t* buf = buf_new(4096);
         if(buf == NULL) {
+            shutdown(fd_to, SHUT_WR);
             close(fd_from);
             close(fd_to);
             close(sfd);
@@ -112,6 +113,8 @@ pid_t make_child(int fd_from, int fd_to) {
     return pid;
 }
 
+
+
 int main(int argc, char** argv)
 {
     if (argc != 3) {
@@ -121,6 +124,10 @@ int main(int argc, char** argv)
 
     sfd = bind_port(argv[1]);
     sfd2 = bind_port(argv[2]);
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(struct sigaction));
+    sa.sa_handler = SIG_IGN;
+    sigaction(SIGCHLD, &sa, NULL);
 
     while (1) {
         int client1 = accept_client(sfd);
